@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мэдээлэл засах</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%); min-height: 100vh; }
+    .navbar {
+      background: #1a1a1a;
+      padding: 14px 24px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .navbar h1 { margin: 0; font-size: 1.3em; color: #4a9eff; }
+    .navbar a {
+      color: #ccc; text-decoration: none; padding: 7px 14px;
+      border-radius: 5px; background: #333; font-size: 0.9em;
+    }
+    .navbar a:hover { background: #444; }
+    .container { max-width: 700px; margin: 30px auto; padding: 0 20px; }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 30px;
+    }
+    .card h2 { margin: 0 0 24px; color: #4a9eff; }
+    .toast {
+      padding: 12px 16px; border-radius: 6px;
+      margin-bottom: 20px; display: none; font-size: 0.9em;
+    }
+    .toast.show { display: block; }
+    .toast.error { background: #4a1a1a; color: #dd8888; border: 1px solid #7a2d2d; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; color: #aaa; margin-bottom: 7px; font-size: 0.9em; }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 11px 13px;
+      background: #0f0f0f;
+      border: 1px solid #333;
+      color: #fff;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus { outline: none; border-color: #4a9eff; }
+    .form-group textarea { resize: vertical; min-height: 140px; }
+    .form-group select option { background: #1a1a1a; }
+    .btn-row { display: flex; gap: 10px; margin-top: 28px; }
+    .btn-submit {
+      flex: 1; padding: 13px;
+      background: #4a9eff; color: #fff;
+      border: none; border-radius: 6px;
+      cursor: pointer; font-size: 15px; font-weight: bold;
+      transition: background 0.2s;
+    }
+    .btn-submit:hover { background: #2b7de9; }
+    .btn-submit:disabled { background: #555; cursor: not-allowed; }
+    .btn-cancel {
+      flex: 1; padding: 13px;
+      background: #333; color: #ccc;
+      border: none; border-radius: 6px;
+      cursor: pointer; font-size: 15px;
+      text-align: center; text-decoration: none;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .btn-cancel:hover { background: #444; }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1 id="pageTitle">➕ Шинэ мэдээлэл</h1>
+    <a href="admin_dashboard.html">← Самбар руу буцах</a>
+  </div>
+
+  <div class="container">
+    <div class="toast" id="toast"></div>
+    <div class="card">
+      <h2 id="cardTitle">Шинэ мэдээлэл нэмэх</h2>
+
+      <div class="form-group">
+        <label>Гарчиг *</label>
+        <input type="text" id="title" placeholder="Мэдээллийн гарчиг">
+      </div>
+      <div class="form-group">
+        <label>Тайлбар</label>
+        <textarea id="description" placeholder="Дэлгэрэнгүй тайлбар..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Төлөв</label>
+        <select id="status">
+          <option value="active">Идэвхтэй</option>
+          <option value="inactive">Идэвхгүй</option>
+        </select>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-submit" id="submitBtn" onclick="save()">Хадгалах</button>
+        <a href="admin_dashboard.html" class="btn-cancel">Цуцлах</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const editId = params.get('id');
+    let isEdit = false;
+
+    // Auth check
+    fetch(`${API_BASE}/api/auth/check`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.loggedIn) { location.href = 'admin_login.html'; return; }
+        if (editId) loadEntry(editId);
+      })
+      .catch(() => location.href = 'admin_login.html');
+
+    async function loadEntry(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/data/${id}`, { credentials: 'include' });
+        if (!res.ok) { showToast('Мэдээлэл олдсонгүй', 'error'); return; }
+        const d = await res.json();
+        document.getElementById('title').value = d.title;
+        document.getElementById('description').value = d.description || '';
+        document.getElementById('status').value = d.status || 'active';
+        document.getElementById('pageTitle').textContent = '✏️ Мэдээлэл засах';
+        document.getElementById('cardTitle').textContent = 'Мэдээлэл засах';
+        document.getElementById('submitBtn').textContent = 'Шинэчлэх';
+        isEdit = true;
+      } catch { showToast('Сервертэй холбогдоход алдаа гарлаа', 'error'); }
+    }
+
+    async function save() {
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const status = document.getElementById('status').value;
+      const btn = document.getElementById('submitBtn');
+
+      if (!title) { showToast('Гарчиг заавал бөглөнө үү', 'error'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Хадгалж байна...';
+
+      try {
+        const url = isEdit
+          ? `${API_BASE}/api/data/${editId}`
+          : `${API_BASE}/api/data`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ title, description, status })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          location.href = 'admin_dashboard.html';
+        } else {
+          showToast(data.error || 'Хадгалахад алдаа гарлаа', 'error');
+        }
+      } catch { showToast('Сервертэй холбогдоход алдаа гарлаа', 'error'); }
+      finally {
+        btn.disabled = false;
+        btn.textContent = isEdit ? 'Шинэчлэх' : 'Хадгалах';
+      }
+    }
+
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 4000);
+    }
+  </script>
+</body>
+</html>

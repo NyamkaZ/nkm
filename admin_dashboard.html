@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админ самбар</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%); min-height: 100vh; }
+    .navbar {
+      background: #1a1a1a;
+      padding: 14px 24px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .navbar h1 { margin: 0; font-size: 1.3em; color: #4a9eff; }
+    .navbar-links { display: flex; gap: 10px; }
+    .navbar-links a {
+      color: #ccc;
+      text-decoration: none;
+      padding: 7px 14px;
+      border-radius: 5px;
+      background: #333;
+      font-size: 0.9em;
+      transition: background 0.2s;
+    }
+    .navbar-links a:hover { background: #444; }
+    .navbar-links a.logout { background: #5c1a1a; }
+    .navbar-links a.logout:hover { background: #7a2020; }
+    .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+    .welcome { color: #888; margin-bottom: 20px; font-size: 0.95em; }
+    .toast {
+      padding: 13px 18px;
+      border-radius: 7px;
+      margin-bottom: 20px;
+      display: none;
+      font-size: 0.95em;
+    }
+    .toast.show { display: block; }
+    .toast.success { background: #1a4a1a; color: #88dd88; border: 1px solid #2d7a2d; }
+    .toast.error   { background: #4a1a1a; color: #dd8888; border: 1px solid #7a2d2d; }
+    .add-btn {
+      background: #4a9eff;
+      color: #fff;
+      border: none;
+      padding: 11px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: bold;
+      margin-bottom: 20px;
+      transition: background 0.2s;
+    }
+    .add-btn:hover { background: #2b7de9; }
+    table { width: 100%; border-collapse: collapse; background: #1a1a1a; border-radius: 8px; overflow: hidden; border: 1px solid #333; }
+    thead { background: #111; }
+    th { padding: 14px 16px; text-align: left; color: #4a9eff; font-size: 0.9em; border-bottom: 1px solid #333; }
+    td { padding: 12px 16px; border-bottom: 1px solid #222; color: #ccc; font-size: 0.9em; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1f1f1f; }
+    .badge {
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .badge.active   { background: #1a4a1a; color: #88dd88; }
+    .badge.inactive { background: #333;    color: #888; }
+    .btn-edit, .btn-del {
+      padding: 5px 11px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+      font-weight: bold;
+      transition: 0.2s;
+      margin-right: 4px;
+    }
+    .btn-edit { background: #3a5a9a; color: #fff; }
+    .btn-edit:hover { background: #4a6aaa; }
+    .btn-del  { background: #7a1a1a; color: #fff; }
+    .btn-del:hover  { background: #9a2a2a; }
+    .empty { text-align: center; padding: 50px; color: #555; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>📊 Админ самбар</h1>
+    <div class="navbar-links">
+      <a href="index.html">Үндсэн хуудас</a>
+      <a href="#" class="logout" onclick="logout()">Гарах</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <p class="welcome">Тавтай морил, <strong id="adminName"></strong></p>
+
+    <div class="toast" id="toast"></div>
+
+    <button class="add-btn" onclick="location.href='admin_edit.html'">+ Шинэ мэдээлэл нэмэх</button>
+
+    <div id="tableWrap">
+      <div class="loading">Уншиж байна...</div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    // Auth check
+    fetch(`${API_BASE}/api/auth/check`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.loggedIn) { location.href = 'admin_login.html'; return; }
+        document.getElementById('adminName').textContent = d.username;
+        loadData();
+      })
+      .catch(() => location.href = 'admin_login.html');
+
+    async function loadData() {
+      try {
+        const res = await fetch(`${API_BASE}/api/data`, { credentials: 'include' });
+        if (res.status === 401) { location.href = 'admin_login.html'; return; }
+        const rows = await res.json();
+        renderTable(rows);
+      } catch (e) {
+        document.getElementById('tableWrap').innerHTML =
+          '<div class="empty">Мэдээлэл татаж чадсангүй.</div>';
+      }
+    }
+
+    function renderTable(rows) {
+      if (rows.length === 0) {
+        document.getElementById('tableWrap').innerHTML =
+          '<div class="empty">Мэдээлэл олдсонгүй. <a href="admin_edit.html" style="color:#4a9eff">Шинэ нэмэх</a></div>';
+        return;
+      }
+
+      const tbody = rows.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${esc(r.title)}</td>
+          <td>${esc(r.description?.substring(0,60))}${r.description?.length>60?'…':''}</td>
+          <td><span class="badge ${r.status}">${esc(r.status)}</span></td>
+          <td>${new Date(r.updated_at).toLocaleString('mn-MN')}</td>
+          <td>
+            <button class="btn-edit" onclick="location.href='admin_edit.html?id=${r.id}'">Засах</button>
+            <button class="btn-del"  onclick="deleteRow(${r.id})">Устгах</button>
+          </td>
+        </tr>`).join('');
+
+      document.getElementById('tableWrap').innerHTML = `
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Гарчиг</th><th>Тайлбар</th><th>Төлөв</th><th>Шинэчлэгдсэн</th><th>Үйлдэл</th></tr>
+          </thead>
+          <tbody>${tbody}</tbody>
+        </table>`;
+    }
+
+    async function deleteRow(id) {
+      if (!confirm('Устгахдаа итгэлтэй байна уу?')) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/data/${id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        if (res.ok) { showToast('Амжилттай устгалаа', 'success'); loadData(); }
+        else showToast('Устгахад алдаа гарлаа', 'error');
+      } catch { showToast('Сертэй холбогдоход алдаа гарлаа', 'error'); }
+    }
+
+    async function logout() {
+      await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
+      location.href = 'admin_login.html';
+    }
+
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

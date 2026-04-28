@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio — Нямцогт</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html">Үндсэн</a>
+    <a href="#skills">Ур чадвар</a>
+    <a href="#projects">Төсөл</a>
+    <a href="#contact">Холбоо барих</a>
+    <a href="admin_login.html" class="admin-link">Админ</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h1>Сайн уу! Нямцогт</h1>
+  <p>Миний ур чадвар, төслүүдийг танилцуулах вэб сайт.</p>
+</section>
+
+<section class="section" id="skills">
+  <h2>Миний Ур Чадварууд</h2>
+  <div class="cards" id="skills-container">
+    <div class="card">HTML</div>
+    <div class="card">CSS</div>
+    <div class="card">JavaScript</div>
+    <div class="card">React</div>
+    <div class="card">Tailwind CSS</div>
+    <div class="card">PHP</div>
+  </div>
+</section>
+
+<section class="section" id="projects">
+  <h2>Бүтээсэн төсөл</h2>
+  <div id="projects-container">
+    <!-- Projects loaded from API -->
+    <div class="project">
+      <h3>Төслийн нэр</h3>
+      <p>Төслийн тайлбар</p>
+    </div>
+  </div>
+</section>
+
+<section class="section contact" id="contact">
+  <h2>Холбоо барих</h2>
+  <form onsubmit="sendMessage(event)">
+    <input type="text" id="name" placeholder="Таны нэр" required>
+    <input type="email" id="email" placeholder="И-мэйл хаяг" required>
+    <textarea id="message" placeholder="Танилцуулга" required></textarea>
+    <button type="submit">Илгээх</button>
+  </form>
+</section>
+
+<footer>© 2026 танилцуулга вэб</footer>
+
+<script src="js/config.js"></script>
+<script>
+function sendMessage(event) {
+  event.preventDefault();
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  alert(`Баярлалаа ${name}! Бид тан руу ${email} хаягаар холбогдох болно.`);
+  event.target.reset();
+}
+</script>
+</body>
+</html>
