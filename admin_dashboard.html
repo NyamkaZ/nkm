@@ -109,8 +109,13 @@
 
   <script src="js/config.js"></script>
   <script>
+    const token = localStorage.getItem('admin_token');
+    if (!token) { location.href = 'admin_login.html'; return; }
+
     // Auth check
-    fetch(`${API_BASE}/api/auth/check`, { credentials: 'include' })
+    fetch(`${API_BASE}/api/auth/check`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(r => r.json())
       .then(d => {
         if (!d.loggedIn) { location.href = 'admin_login.html'; return; }
@@ -121,7 +126,9 @@
 
     async function loadData() {
       try {
-        const res = await fetch(`${API_BASE}/api/data`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/data`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.status === 401) { location.href = 'admin_login.html'; return; }
         const rows = await res.json();
         renderTable(rows);
@@ -165,7 +172,7 @@
       try {
         const res = await fetch(`${API_BASE}/api/data/${id}`, {
           method: 'DELETE',
-          credentials: 'include'
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) { showToast('Амжилттай устгалаа', 'success'); loadData(); }
         else showToast('Устгахад алдаа гарлаа', 'error');
@@ -173,7 +180,8 @@
     }
 
     async function logout() {
-      await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
+      await fetch(`${API_BASE}/api/logout`, { method: 'POST' });
+      localStorage.removeItem('admin_token');
       location.href = 'admin_login.html';
     }
 

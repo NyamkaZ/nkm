@@ -117,9 +117,13 @@
     const params = new URLSearchParams(location.search);
     const editId = params.get('id');
     let isEdit = false;
+    const token = localStorage.getItem('admin_token');
+    if (!token) { location.href = 'admin_login.html'; return; }
 
     // Auth check
-    fetch(`${API_BASE}/api/auth/check`, { credentials: 'include' })
+    fetch(`${API_BASE}/api/auth/check`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(r => r.json())
       .then(d => {
         if (!d.loggedIn) { location.href = 'admin_login.html'; return; }
@@ -129,7 +133,9 @@
 
     async function loadEntry(id) {
       try {
-        const res = await fetch(`${API_BASE}/api/data/${id}`, { credentials: 'include' });
+        const res = await fetch(`${API_BASE}/api/data/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (!res.ok) { showToast('Мэдээлэл олдсонгүй', 'error'); return; }
         const d = await res.json();
         document.getElementById('title').value = d.title;
@@ -161,8 +167,10 @@
 
         const res = await fetch(url, {
           method,
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ title, description, status })
         });
         const data = await res.json();

@@ -96,10 +96,15 @@
   <script src="js/config.js"></script>
   <script>
     // If already logged in, redirect
-    fetch(`${API_BASE}/api/auth/check`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => { if (d.loggedIn) location.href = 'admin_dashboard.html'; })
-      .catch(() => {});
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      fetch(`${API_BASE}/api/auth/check`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(r => r.json())
+        .then(d => { if (d.loggedIn) location.href = 'admin_dashboard.html'; })
+        .catch(() => {});
+    }
 
     async function login() {
       const username = document.getElementById('username').value.trim();
@@ -120,12 +125,12 @@
         const res = await fetch(`${API_BASE}/api/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ username, password })
         });
         const data = await res.json();
 
         if (res.ok && data.success) {
+          localStorage.setItem('admin_token', data.token);
           location.href = 'admin_dashboard.html';
         } else {
           showError(data.error || 'Нэвтрэх амжилтгүй');
